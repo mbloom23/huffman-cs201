@@ -9,7 +9,7 @@
  * 
  * @author Owen Astrachan
  */
-
+import java.util.*;
 public class HuffProcessor {
 
 	public static final int BITS_PER_WORD = 8;
@@ -71,6 +71,26 @@ public class HuffProcessor {
 	}
 
 	public HuffNode makeTreeFromCounts(int[] counts) {
+		PriorityQueue<HuffNode> pq = new PriorityQueue<>();
+
+		for(int k = 0; k<counts.length; k++) {
+			int count = counts[k];
+			if(count > 0) {
+				pq.add(new HuffNode(k, count, null, null));
+			}
+		}
+
+		while(pq.size() > 1) {
+			HuffNode left = pq.remove();
+			HuffNode right = pq.remove();
+			HuffNode t = new HuffNode(0, left.myWeight+right.myWeight, left, right);
+			pq.add(t);
+		}
+		HuffNode root = pq.remove();
+		return root;
+	}
+
+	public String[] makeCodingsFromTree (HuffNode root) {
 		
 	}
 	/**
