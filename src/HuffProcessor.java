@@ -48,12 +48,7 @@ public class HuffProcessor {
 
 		out.writeBits(BITS_PER_INT, HUFF_TREE);
 		writeHeader(root, out);
-		// remove all this code when implementing compress
-		while (true){
-			int val = in.readBits(BITS_PER_WORD);
-			if (val == -1) break;
-			out.writeBits(BITS_PER_WORD, val);
-		}
+
 		in.reset();
 		writeCompressedBits(codings, in, out);
 		out.close();
@@ -91,8 +86,48 @@ public class HuffProcessor {
 	}
 
 	public String[] makeCodingsFromTree (HuffNode root) {
-		
+		String[] encodings = new String[ALPH_SIZE + 1];
+		fillCodes(root, "", encodings);
+		return encodings;
 	}
+
+	public void fillCodes(HuffNode tree, String path, String[] encodings) {
+		if(tree == null) return;
+		if(isLeaf(tree)) {
+			encodings[tree.myValue] = path;
+			return;
+		}
+		else {
+			fillCodes(tree.myLeft, path+"0", encodings);
+			fillCodes(tree.myRight, path+"1", encodings);
+		}
+	}
+
+	public void writeHeader(HuffNode node, BitOutputStream out) {
+		if(!isLeaf(node)) {
+			out.writeBits(1, 0);
+			writeHeader(node.myLeft, out);
+			writeHeader(node.myRight, out);
+		}
+		else {
+			out.writeBits(1, 1);
+			out.writeBits(BITS_PER_WORD + 1, node.myValue);
+		}
+	}
+
+	public void writeCompressedBits(String[] codings, BitInputStream in, BitOutputStream out) {
+		while(true) {
+			int val = in.readBits(BITS_PER_WORD);
+			if(val == PSEUDO_EOF) {
+				String code = codings[val];
+				out.writeBits(code.length(), Integer.parseInt(code, 2));
+				break;
+			}
+			String code = codings[val];
+			out.writeBits(code.length(), Integer.parseInt(code, 2));
+		}
+	}
+	
 	/**
 	 * Decompresses a file. Output file must be identical bit-by-bit to the
 	 * original.
@@ -135,7 +170,7 @@ public class HuffProcessor {
 	public HuffNode readTree(BitInputStream in) {
 		int bit = in.readBits(1);
 		if(bit == -1)  {
-			throw new HuffException("invalid bit" + bit);
+			throw new HuffException("out of bits in reading tree header");
 		}
 		if(bit == 0) {
 			HuffNode left = readTree(in);
