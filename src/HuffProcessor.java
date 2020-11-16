@@ -54,7 +54,7 @@ public class HuffProcessor {
 		out.close();
 	}
 
-	public int[] readForCounts(BitInputStream in) {
+	private int[] readForCounts(BitInputStream in) {
 		int[] ret = new int[ALPH_SIZE + 1];
 		while(true) {
 			int dex = in.readBits(BITS_PER_WORD);
@@ -65,7 +65,7 @@ public class HuffProcessor {
 		return ret;
 	}
 
-	public HuffNode makeTreeFromCounts(int[] counts) {
+	private HuffNode makeTreeFromCounts(int[] counts) {
 		PriorityQueue<HuffNode> pq = new PriorityQueue<>();
 
 		for(int k = 0; k<counts.length; k++) {
@@ -85,13 +85,13 @@ public class HuffProcessor {
 		return root;
 	}
 
-	public String[] makeCodingsFromTree (HuffNode root) {
+	private String[] makeCodingsFromTree (HuffNode root) {
 		String[] encodings = new String[ALPH_SIZE + 1];
 		fillCodes(root, "", encodings);
 		return encodings;
 	}
 
-	public void fillCodes(HuffNode tree, String path, String[] encodings) {
+	private void fillCodes(HuffNode tree, String path, String[] encodings) {
 		if(tree == null) return;
 		if(isLeaf(tree)) {
 			encodings[tree.myValue] = path;
@@ -103,7 +103,7 @@ public class HuffProcessor {
 		}
 	}
 
-	public void writeHeader(HuffNode node, BitOutputStream out) {
+	private void writeHeader(HuffNode node, BitOutputStream out) {
 		if(!isLeaf(node)) {
 			out.writeBits(1, 0);
 			writeHeader(node.myLeft, out);
@@ -115,9 +115,9 @@ public class HuffProcessor {
 		}
 	}
 
-	public void writeCompressedBits(String[] codings, BitInputStream in, BitOutputStream out) {
+	private void writeCompressedBits(String[] codings, BitInputStream in, BitOutputStream out) {
 		while(true) {
-			int val = in.readBits(BITS_PER_WORD);
+			int val = in.readBits(BITS_PER_WORD+1);
 			if(val == PSEUDO_EOF) {
 				String code = codings[val];
 				out.writeBits(code.length(), Integer.parseInt(code, 2));
@@ -127,7 +127,7 @@ public class HuffProcessor {
 			out.writeBits(code.length(), Integer.parseInt(code, 2));
 		}
 	}
-	
+
 	/**
 	 * Decompresses a file. Output file must be identical bit-by-bit to the
 	 * original.
@@ -167,7 +167,7 @@ public class HuffProcessor {
 		out.close();
 	}
 
-	public HuffNode readTree(BitInputStream in) {
+	private HuffNode readTree(BitInputStream in) {
 		int bit = in.readBits(1);
 		if(bit == -1)  {
 			throw new HuffException("out of bits in reading tree header");
@@ -183,7 +183,7 @@ public class HuffProcessor {
 		}
 	}
 
-	public boolean isLeaf(HuffNode node) {
+	private boolean isLeaf(HuffNode node) {
 		return node.myLeft == null && node.myRight == null;
 	}
 }
